@@ -1,0 +1,182 @@
+import random
+
+class Player:
+    global deck
+    global discardPile
+    def __init__(self, money=1000,bet=0, hand=[], standValue=False, id=None, playerIn = True):
+        self.money = money
+        self.bet = bet
+        self.hand = hand
+        self.standValue = standValue
+        self.id = id
+        self.playerIn = playerIn
+    def __repr__(self):
+        return self.id
+    
+    def deal(self):
+        card = deck.pop()
+        self.hand.append(card)
+        discardPile.append(card)
+
+    def betting(self):
+        validbet = False
+        while True:
+            tempBet = input(f"{self.id}, balance: {self.money} please input bet amount: ")
+            if int(tempBet) > self.money:
+                print("please input a valid bet")
+                continue
+            self.bet = int(tempBet)
+            self.money -= self.bet
+            break
+    
+    def takeAction(self):
+        while self.standValue == False:
+            val = input("press h to hit and s to stand: ")
+            match val:
+                case "h":
+                    self.deal()
+                    print(self.hand)
+                    if self.legalHand() == False:
+                        print("cringe hand LOL!")
+                        self.playerIn = False
+                        self.standValue = True
+                        break
+                    else:
+                        continue
+                case "s":
+                    self.standValue = True
+                    print("I stand")
+                    break
+                case "d":
+                    if len(self.hand) == 2:
+                        self.money -= self.bet
+                        self.bet *= 2
+                        self.standValue = True
+                        break
+                    else:
+                        print("you can only double down if you havent been dealt any extra cards")
+                        continue
+                case _:
+                    print("Invalid input please try again")
+                    continue
+    def win(self):
+        self.money += self.bet * 2
+        print(f"{self.id} you win! | balance: {self.money}")
+    
+    def lose(self):
+        print(f"{self.id} you lose | balance: {self.money}")
+        self.playerIn = False
+    
+    def legalHand(self):
+        if sum(self.hand) > 21:
+            if 11 in self.hand:
+                if sum(self.hand)-10 <= 21:
+                    return True
+                else:
+                    return False
+            else:
+                return False
+        else:
+            return True
+
+class Controller:
+    def __init__(self, numDecks=1, players=[]):
+        self.numDecks = numDecks
+        self.players = players
+        self.setDeck()
+
+    def setDeck(self):
+        counter = self.numDecks
+        while counter > 1:
+            deck.extend(deckStandart)
+            counter -= 1
+        random.shuffle(deck)
+
+    def playRound(self):
+        for i in allActors:
+            if i.id != "Dealer":
+                if i.money <= 0:
+                    allActors.remove(i)
+                else:
+                    i.betting()
+        
+        setupHands()
+        showScores()
+        for i in allActors:
+            if i.id != "Dealer":
+                print(f"{i.id} with {i.hand}")
+                i.takeAction()
+                if i.legalHand == False:
+                    i.lose()
+                    print("early out")
+        dealerplay()
+        showScores()
+        if sum(dealer.hand) > 21:
+            for i in allActors:
+                if i.id != "Dealer":
+                    i.win()
+        else:
+            for i in allActors:
+                if i.id != "Dealer":
+                    if i.playerIn == False:
+                        break
+                    if sum(i.hand) > 21:
+                        i.lose()
+                    if sum(i.hand) > sum(dealer.hand) and sum(i.hand) <= 21:
+                        i.win()
+                    if sum(i.hand) <= sum(dealer.hand):
+                        i.lose()
+        for i in allActors:
+            i.hand = []
+            i.standValue = False
+        
+
+deckStandart = (11,11,11,11,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10)
+deck = [11,11,11,11,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10]
+discardPile = []
+
+
+player = Player(hand=[], id="Player")
+dealer = Player(money=0, hand=[], id="Dealer")
+alex = Player(hand=[], money= 10000, id="Alex")
+
+allActors =[dealer,player,alex]
+
+def showScores():
+    global allActors
+    for i in allActors:
+        print(i.id + " " + str(i.hand))
+
+def setupHands():
+    global allActors
+    for i in  allActors:
+        if i.id == "Dealer":
+            i.deal()
+        else:
+            i.deal()
+            i.deal()
+
+def dealerplay():
+    dealerIn = True
+    while dealerIn == True:
+        if sum(dealer.hand) < 17:
+            dealer.deal()
+            continue
+        if sum(dealer.hand) > 17:
+            if 11 in dealer.hand == True:
+                if sum(dealer.hand)-10 > 17:
+                    dealerIn = False
+                    continue
+                if sum(dealer.hand)-10 < 21 and sum(dealer.hand)-10 > 17:
+                    dealerIn = False
+                    continue
+                if sum(dealer.hand)-10 < 17:
+                    dealer.deal()
+                    continue
+            else:
+                dealerIn = False
+
+
+game = Controller(numDecks=5,players=allActors)
+while len(deck) > 30:
+    game.playRound()
