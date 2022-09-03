@@ -10,6 +10,7 @@ class Player:
         self.standValue = standValue
         self.id = id
         self.playerIn = playerIn
+        self.log = []
     def __repr__(self):
         return self.id
     
@@ -79,6 +80,43 @@ class Player:
         else:
             return True
 
+    def autoAction(self):
+        print("in func")
+        while self.standValue == False:
+            decisions = ["s", "h", "d"]
+            val = decisions[random.randint(0,2)]
+            print(f"auto player chose {val}")
+            match val:
+                case "h":
+                    self.deal()
+                    print(self.hand)
+                    if self.legalHand() == False:
+                        print("cringe hand LOL!")
+                        self.playerIn = False
+                        self.standValue = True
+                        break
+                    else:
+                        continue
+                case "s":
+                    self.standValue = True
+                    print("I stand")
+                    break
+                case "d":
+                    if len(self.hand) == 2:
+                        self.money -= self.bet
+                        self.bet *= 2
+                        self.standValue = True
+                        break
+                    else:
+                        print("you can only double down if you havent been dealt any extra cards")
+                        continue
+                case _:
+                    print("Invalid input please try again")
+                    continue
+    def makelog(self):
+        self.log.append(self.money)
+        print(self.log)
+
 class Controller:
     def __init__(self, numDecks=1, players=[]):
         self.numDecks = numDecks
@@ -98,6 +136,9 @@ class Controller:
                 if i.money <= 0:
                     allActors.remove(i)
                 else:
+                    if i.id == "Player":
+                        i.bet = 100
+                        break
                     i.betting()
         
         setupHands()
@@ -105,7 +146,12 @@ class Controller:
         for i in allActors:
             if i.id != "Dealer":
                 print(f"{i.id} with {i.hand}")
-                i.takeAction()
+                if i.id != "Player":
+                    i.takeAction()
+                else:
+                    print("run auto")
+                    i.autoAction()
+                    print(i.hand)
                 if i.legalHand == False:
                     i.lose()
                     print("early out")
@@ -127,9 +173,13 @@ class Controller:
                     if sum(i.hand) <= sum(dealer.hand):
                         i.lose()
         for i in allActors:
+            if i.id != "Dealer":
+                i.makelog()
             i.hand = []
             i.standValue = False
         
+        
+    
 
 deckStandart = (11,11,11,11,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10)
 deck = [11,11,11,11,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6,7,7,7,7,8,8,8,8,9,9,9,9,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10]
@@ -140,7 +190,7 @@ player = Player(hand=[], id="Player")
 dealer = Player(money=0, hand=[], id="Dealer")
 alex = Player(hand=[], money= 10000, id="Alex")
 
-allActors =[dealer,player,alex]
+allActors =[dealer,player]
 
 def showScores():
     global allActors
@@ -180,3 +230,4 @@ def dealerplay():
 game = Controller(numDecks=5,players=allActors)
 while len(deck) > 30:
     game.playRound()
+print(player.log)
